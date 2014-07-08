@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+    <head>
+        <title>SRP</title>
+        <script type="text/javascript" src="static/js/jsbn.js"></script>
+        <script type="text/javascript" src="static/js/sha1.js"></script>
+        <script type="text/javascript" src="static/js/sjcl.js"></script>
+        <script type="text/javascript" src="static/js/srp-client.js"></script>
+    </head>
+    <body>
+        <div id="login-box">
+            <div class="form-line">
+                <input type="text" name="login" placeholder="Login:" />
+            </div>
+            <div class="form-line">
+                <input type="password" name="password" placeholder="Password:" />
+            </div>
+            <div class="form-line">
+                <button>Login</button>
+            </div>
+            <a class="registration" href="/registration">Registration</a>
+        </div>
+
+        <div>
+            <div id="register-box">
+            <div class="form-line">
+                <input type="text" name="login" placeholder="Login:" />
+            </div>
+            <div class="form-line">
+                <input type="password" name="password" placeholder="Password:" />
+            </div>
+            <div class="form-line">
+                <input type="password" name="password_repeat" placeholder="Repeat password:" />
+            </div>
+            <div class="form-line">
+                <button>Register</button>
+            </div>
+            <a class="login" href="/login">Login</a>
+        </div>
+        </div>
+
+        <script type="text/javascript">
+        var send = function(type, url, data, callback){
+            type = type.toLowerCase()
+            var query = [];
+            for(var i in data){
+                query.push(encodeURIComponent(i)+'='+encodeURIComponent(data[i]));
+            }
+            query = query.join('&');
+
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(){
+                if(xhr.getResponseHeader('Content-Type').indexOf('application/json') === 0){
+                    callback(JSON.parse(xhr.responseText));
+                }else{
+                    callback(xhr.responseText);
+                }
+                
+            };
+
+            xhr.open(type, url, true);
+            if(type === 'post'){
+                xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded; charset=UTF-8');
+            }
+            xhr.setRequestHeader('X-Requested-With','XMLHttpRequest');
+            xhr.send(query);
+        };
+        var $ = function(s, ctx){
+            return (ctx || document).querySelector(s);
+        };
+        var $$ = function(s, ctx){
+            return (ctx || document).document.querySelectorAll(s);
+        };
+
+        $login = $('#login-box');
+        $('button', $login).addEventListener('click',function(e){
+            var login = $('input[name="login"]', $login).value.trim();
+            var password = $('input[name="password"]', $login).value.trim();
+         
+            if(password.length && login.length){
+                var bits =  2048;
+                var srp = new SRPClient(login, password, bits);
+                var a = srp.srpRandom();
+                console.log('a',a.toString().substr(0,50));
+                var A = srp.calculateA(a);
+                console.log('A',A.toString().substr(0,50));
+                send('post', '/handshake', {login:login, a:A}, function(req){
+                    if(req.error){
+                        alert(req.message);
+                    }else{
+                        var B = new BigInteger(req.b);
+                        var u = srp.calculateU(A, B);
+                        var S = srp.calculateS(B, req.salt, u, a);
+                        var K = srp.calculateK(S);
+                        var M = srp.calculateM(A, B, K);
+                        console.log('B',B.toString().substr(0,50));
+                        console.log('u',u.toString().substr(0,50));
+                        console.log('S',S.toString().substr(0,50));
+                        console.log('K',K.toString().substr(0,50));
+                        console.log('M',M.toString().substr(0,50));
+                        send('post','/authenticate',{login:login, m:M, a:A}, function(req){
+                            if(req.error){
+                                alert(req.message);
+                            }else{
+                                console.log(req);
+                                //location.href = '/';
+                            }
+                        });
+                    }
+                });
+            }
+            
+        },false);
+
+
+         $reg = $('#register-box');
+        $('button' , $reg).addEventListener('click',function(e){
+            console.log(e);
+            var login = $('input[name="login"]',$reg).value.trim();
+            var password = $('input[name="password"]',$reg).value.trim();
+            var repassword = $('input[name="password_repeat"]',$reg).value.trim();
+            if(password.length && password === repassword && login.length){
+                var bits     =  2048;
+                var srp = new SRPClient(login, password, bits);
+                var salt = srp.randomHexSalt();
+                var v = srp.calculateV(salt);
+                send('post', '/registration', {login:login,salt:salt,v:v,_p:password}, function(req){
+                    if(req.error){
+                        alert(req.message);
+                    }else{
+                        //location.href = '/login';
+                    }
+
+                });
+            }
+
+        },false);
+  </script> 
+    </body>
+</html>
+
