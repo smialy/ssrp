@@ -41,7 +41,7 @@ def authenticate():
         _M = request.form['m']
         srp = session.pop('srp', None)
         if srp:
-            A, B, K, M = srp
+            K, M = srp
             if _M == str(M):
                 return jsonify(error=False);
     
@@ -63,7 +63,7 @@ def handshake():
             A = request.form['a']
             svr = ssrp.Server(user['login'], user['salt'], int(user['v']), int(A));
             salt, B = svr.challenge()
-            session['srp'] = (A, B, svr.K, svr.M)
+            session['srp'] = (svr.K, svr.M)
             if salt is None or B is None:
                 return jsonify(error=True, message="Authentication failed");
             return jsonify(error=False, salt=salt, b=str(B));
