@@ -51,8 +51,10 @@ module.exports = function(grunt) {
                 browser:true,
                 es5: true,
                 globals: {
-                    sjs:true,
-                    console:true
+                    jsSHA:true,
+                    sjcl:true,
+                    BigInteger:true
+
                 }
             }
         }

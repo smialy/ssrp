@@ -524,7 +524,7 @@
             if (!config.current) {
                 throw new Error("ok() assertion outside test context, was " + sourceFromStacktrace(2));
             }
-            result = !! result;
+            result = !!result;
             msg = msg || (result ? "okay" : "failed");
 
             var source,
@@ -970,7 +970,7 @@
             runLoggingCallbacks("log", QUnit, details);
 
             config.current.assertions.push({
-                result: !! result,
+                result: !!result,
                 message: output
             });
         },
@@ -1685,12 +1685,12 @@
 
                     "regexp": function(b, a) {
                         return QUnit.objectType(b) === "regexp" &&
-                        // the regex itself
-                        a.source === b.source &&
-                        // and its modifiers
-                        a.global === b.global &&
-                        // (gmi) ...
-                        a.ignoreCase === b.ignoreCase &&
+                            // the regex itself
+                            a.source === b.source &&
+                            // and its modifiers
+                            a.global === b.global &&
+                            // (gmi) ...
+                            a.ignoreCase === b.ignoreCase &&
                             a.multiline === b.multiline &&
                             a.sticky === b.sticky;
                     },

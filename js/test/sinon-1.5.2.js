@@ -453,7 +453,7 @@ var sinon = (function() {
                     continue;
                 }
 
-                if ( !! attribute.nodeValue) {
+                if (!!attribute.nodeValue) {
                     pairs.push(attrName + "=\"" + attribute.nodeValue + "\"");
                 }
             }
@@ -530,7 +530,7 @@ var sinon = (function() {
         }
 
         function isFunction(obj) {
-            return typeof obj === "function" || !! (obj && obj.constructor && obj.call && obj.apply);
+            return typeof obj === "function" || !!(obj && obj.constructor && obj.call && obj.apply);
         }
 
         function mirrorProperties(target, source) {
@@ -563,7 +563,7 @@ var sinon = (function() {
                 }
 
                 if (wrappedMethod.calledBefore) {
-                    var verb = !! wrappedMethod.returns ? "stubbed" : "spied on";
+                    var verb = !!wrappedMethod.returns ? "stubbed" : "spied on";
                     throw new TypeError("Attempted to wrap " + property + " which is already " + verb);
                 }
 
@@ -1637,7 +1637,7 @@ var sinon = (function() {
         }
 
         function stub(object, property, func) {
-            if ( !! func && typeof func != "function") {
+            if (!!func && typeof func != "function") {
                 throw new TypeError("Custom stub should be function");
             }
 
@@ -1653,7 +1653,7 @@ var sinon = (function() {
                 return sinon.stub.create();
             }
 
-            if (!property && !! object && typeof object == "object") {
+            if (!property && !!object && typeof object == "object") {
                 for (var prop in object) {
                     if (typeof object[prop] === "function") {
                         stub(object, prop);
@@ -2500,7 +2500,7 @@ var sinon = (function() {
                         });
                     }
                 }
-                if (!property && !! object && typeof object == "object") {
+                if (!property && !!object && typeof object == "object") {
                     var stubbedObj = sinon.stub.apply(sinon, arguments);
 
                     for (var prop in stubbedObj) {
@@ -2651,7 +2651,7 @@ var sinon = (function() {
                     clock.now = now;
                 }
 
-                if ( !! now && typeof now == "object") {
+                if (!!now && typeof now == "object") {
                     throw new TypeError("now should be milliseconds since UNIX epoch");
                 }
 
@@ -4004,7 +4004,8 @@ var sinon = (function() {
 
             prefix = prefix || "test";
             var rPrefix = new RegExp("^" + prefix);
-            var methods = {}, testName, property, method;
+            var methods = {},
+                testName, property, method;
             var setUp = tests.setUp;
             var tearDown = tests.tearDown;
 
@@ -4176,7 +4177,7 @@ var sinon = (function() {
 
                 var o = options || {};
                 var prefix = typeof o.prefix == "undefined" && "assert" || o.prefix;
-                var includeFail = typeof o.includeFail == "undefined" || !! o.includeFail;
+                var includeFail = typeof o.includeFail == "undefined" || !!o.includeFail;
 
                 for (var method in this) {
                     if (method != "export" && (includeFail || !/^(fail)/.test(method))) {
