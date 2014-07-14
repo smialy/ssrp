@@ -6,25 +6,77 @@
         };
     }
 
-    ssrp.hash = {
-        sha1: function(str) {
-            var hash = new jsSHA(str, "TEXT");
-            return hash.getHash("SHA-1", "HEX");
-        },
-        sha512: function(str) {
-            var hash = new jsSHA(str, "TEXT");
-            return hash.getHash("SHA-512", "HEX");
-        }
-    };
+    /**
+     * Client
+     *
+     * @constructor
+     * @param {String} username
+     * @param {String} password
+     * @param {String} ngType (default: 1024)
+     * @param {String} hashType (defult: sha1)
+     */
+    ssrp.Client = function(username, password, ngType, hashType) {
 
-    ssrp.Client = function(login, password, ngType, hashType) {
+        if (!username) {
+            throw {
+                message: 'Username cannot be empty.'
+            };
+        }
+        if (!password) {
+            throw {
+                message: 'Passwrod cannot be empty.'
+            };
+        }
+
+        ngType = ngType || '1024';
+        hashType = hashType || 'sha1';
+
+        if (!NGS.hasOwnProperty(ngType)) {
+            throw {
+                message: 'Not found NG type: ' + ngType + ' [' + Object.keys(NGS).join(', ') + ']'
+            };
+        }
+        if (!HASH.hasOwnProperty(hashType)) {
+            throw {
+                message: 'Not found hash type: ' + hashType
+            };
+        }
+
+        Object.defineProperties(this, {
+            $ng: {
+                value: ngType,
+                writable: false
+            },
+            $hash: {
+                value: hashType,
+                writable: false
+            }
+        });
+
+        var NG = NGS[ngType];
+        var N = new BigInteger(NG.N, 16);
+        var g = new BigInteger(NG.g, 16);
+        k = this.$h(N, g);
+
         Object.defineProperties(this, {
             I: {
-                values: login,
+                value: username,
                 writable: false
             },
             p: {
-                values: password,
+                value: password,
+                writable: false
+            },
+            N: {
+                value: N,
+                writable: false
+            },
+            g: {
+                value: g,
+                writable: false
+            },
+            k: {
+                value: k,
                 writable: false
             }
         });
@@ -35,23 +87,93 @@
     };
 
     ssrp.Client.prototype = {
+        $h:function(){
+            var args = [];
+            for(var i = 0;i<arguments.length;i++){
+                args.push(arguments[i].toString());
+            }
+            return new BigInteger(this.hash(args.join(':')), 16);
+        },
+        hash: function(s) {
+            return HASH[this.$hash](s);
+        },
+        randomSalt: function() {
+            var words = sjcl.random.randomWords(4, 0);
+            return sjcl.codec.hex.fromBits(words);
+        },
+        randomNumber: function() {
+            var words = sjcl.random.randomWords(4, 0);
+            var hex = sjcl.codec.hex.fromBits(words);
+            return new BigInteger(hex, 16);
+        },
         /**
-         * Calculate verification code
+         * Calculate verification code [v = g^x % N]
          *
          * @return {BigInteger}
          */
         verification: function(salt) {
             if (!salt) {
-                salt = sjcl.codec.hex.fromBits(sjcl.random.randomWords(4, 0));
+                salt = this.randomSalt();
             }
-            var x = this.calculateX(salt);
+            var x = this._calculateX(salt);
             var v = this.g.modPow(x, this.N);
+            return {
+                salt: salt,
+                v: v
+            };
         },
+        /**
+         * 
+         * @param {BigInteger} a
+         * @return {BigInteger}
+         */
+        authentication: function(a) {
+            if (!a) {
+                a = this.randomNumber();
+            }
+            if(!(a instanceof BigInteger)){
+                throw {
+                    message:'Expected BigInteger as parameter: a'
+                };
+            }
+
+            var A = this.g.modPow(a, this.N);
+            console.log(A.toString())
+            if (A.mod(this.N).toString() === '0') {
+                throw {
+                    mesage: 'Illegal: A'
+                };
+            }
+            return A;
+        },
+        processChallenge:function(){
+
+        },
+        /**
+         * Calculate X [x = hash(s | hash(I | ":" | P))]
+         *
+         * @param {String} salt
+         */
+        _calculateX: function(salt) {
+            var X = this.hash(salt + ':' + this.hash(this.I + ":" + this.p));
+            return new BigInteger(X, 16);
+
+        }
 
     };
 
+    var HASH = {
+        sha1: function(str) {
+            var hash = new jsSHA(str, "TEXT");
+            return hash.getHash("SHA-1", "HEX");
+        },
+        sha512: function(str) {
+            var hash = new jsSHA(str, "TEXT");
+            return hash.getHash("SHA-512", "HEX");
+        }
+    };
 
-    ssrp.NGS = {
+    var NGS = {
 
         1024: {
             N: 'EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C' +
@@ -61,17 +183,6 @@
                 'FD5138FE8376435B9FC61D2FC0EB06E3',
             g: '2'
 
-        },
-
-        1536: {
-            N: '9DEF3CAFB939277AB1F12A8617A47BBBDBA51DF499AC4C80BEEEA961' +
-                '4B19CC4D5F4F5F556E27CBDE51C6A94BE4607A291558903BA0D0F843' +
-                '80B655BB9A22E8DCDF028A7CEC67F0D08134B1C8B97989149B609E0B' +
-                'E3BAB63D47548381DBC5B1FC764E3F4B53DD9DA1158BFD3E2B9C8CF5' +
-                '6EDF019539349627DB2FD53D24B7C48665772E437D6C7F8CE442734A' +
-                'F7CCB7AE837C264AE3A9BEB87F8A2FE9B8B5292E5A021FFF5E91479E' +
-                '8CE7A28C2442C6F315180F93499A234DCF76E3FED135F9BB',
-            g: '2'
         },
 
         2048: {
@@ -86,24 +197,6 @@
                 '94B5C803D89F7AE435DE236D525F54759B65E372FCD68EF20FA7111F' +
                 '9E4AFF73',
             g: '2'
-        },
-
-        3072: {
-            N: 'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E08' +
-                '8A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B' +
-                '302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9' +
-                'A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE6' +
-                '49286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8' +
-                'FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D' +
-                '670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C' +
-                '180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF695581718' +
-                '3995497CEA956AE515D2261898FA051015728E5A8AAAC42DAD33170D' +
-                '04507A33A85521ABDF1CBA64ECFB850458DBEF0A8AEA71575D060C7D' +
-                'B3970F85A6E1E4C7ABF5AE8CDB0933D71E8C94E04A25619DCEE3D226' +
-                '1AD2EE6BF12FFA06D98A0864D87602733EC86A64521F2B18177B200C' +
-                'BBE117577A615D6C770988C0BAD946E208E24FA074E5AB3143DB5BFC' +
-                'E0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF',
-            g: '5'
         },
 
         4096: {
@@ -126,38 +219,6 @@
                 '233BA186515BE7ED1F612970CEE2D7AFB81BDD762170481CD0069127' +
                 'D5B05AA993B4EA988D8FDDC186FFB7DC90A6C08F4DF435C934063199' +
                 'FFFFFFFFFFFFFFFF',
-            g: '5'
-        },
-
-        6144: {
-            N: 'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E08' +
-                '8A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B' +
-                '302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9' +
-                'A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE6' +
-                '49286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8' +
-                'FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D' +
-                '670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C' +
-                '180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF695581718' +
-                '3995497CEA956AE515D2261898FA051015728E5A8AAAC42DAD33170D' +
-                '04507A33A85521ABDF1CBA64ECFB850458DBEF0A8AEA71575D060C7D' +
-                'B3970F85A6E1E4C7ABF5AE8CDB0933D71E8C94E04A25619DCEE3D226' +
-                '1AD2EE6BF12FFA06D98A0864D87602733EC86A64521F2B18177B200C' +
-                'BBE117577A615D6C770988C0BAD946E208E24FA074E5AB3143DB5BFC' +
-                'E0FD108E4B82D120A92108011A723C12A787E6D788719A10BDBA5B26' +
-                '99C327186AF4E23C1A946834B6150BDA2583E9CA2AD44CE8DBBBC2DB' +
-                '04DE8EF92E8EFC141FBECAA6287C59474E6BC05D99B2964FA090C3A2' +
-                '233BA186515BE7ED1F612970CEE2D7AFB81BDD762170481CD0069127' +
-                'D5B05AA993B4EA988D8FDDC186FFB7DC90A6C08F4DF435C934028492' +
-                '36C3FAB4D27C7026C1D4DCB2602646DEC9751E763DBA37BDF8FF9406' +
-                'AD9E530EE5DB382F413001AEB06A53ED9027D831179727B0865A8918' +
-                'DA3EDBEBCF9B14ED44CE6CBACED4BB1BDB7F1447E6CC254B33205151' +
-                '2BD7AF426FB8F401378CD2BF5983CA01C64B92ECF032EA15D1721D03' +
-                'F482D7CE6E74FEF6D55E702F46980C82B5A84031900B1C9E59E7C97F' +
-                'BEC7E8F323A97A7E36CC88BE0F1D45B7FF585AC54BD407B22B4154AA' +
-                'CC8F6D7EBF48E1D814CC5ED20F8037E0A79715EEF29BE32806A1D58B' +
-                'B7C5DA76F550AA3D8A1FBFF0EB19CCB1A313D55CDA56C9EC2EF29632' +
-                '387FE8D76E3C0468043E8F663F4860EE12BF2D5B0B7474D6E694F91E' +
-                '6DCC4024FFFFFFFFFFFFFFFF',
             g: '5'
         },
 
@@ -203,5 +264,7 @@
         }
 
     };
+    ssrp.HASH = HASH;
+    ssrp.NGS = NGS;
 
 })(window.ssrp = {});

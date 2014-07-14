@@ -3,10 +3,10 @@
 
     module('require');
     test('hash sha1', function() {
-        equal(ssrp.hash.sha1('test'), 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3');
+        equal(ssrp.HASH.sha1('test'), 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3');
     });
     test('hash sha512', function() {
-        equal(ssrp.hash.sha512('test'), 'ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff');
+        equal(ssrp.HASH.sha512('test'), 'ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff');
     });
     test('BitInteger', function() {
         var num = new BigInteger('123456');
@@ -21,36 +21,94 @@
 
 
 
+    var _ = {};
 
     module('ssrp', {
         setup: function() {
 
-            this.I = 'user';
-            this.p = 'password';
-            this.ng_type = '2024';
-            this.hash_type = 'sha1'
-
-            this.client = new ssrp.Client(this.I, this.p, this.ng_type, this.hash_type);
+            _.I = 'user';
+            _.p = 'password';
+            _.ng_type = '1024';
+            _.hash_type = 'sha1'
+            _.client = new ssrp.Client(_.I, _.p, _.ng_type, _.hash_type);
         },
         teardown: function() {
-            this.client = null;
+            _.client = null;
         }
     });
 
 
     test('client init', function() {
-        equal(this.client.I, this.I);
+        equal(_.client.I, _.I);
 
-        //prevent writable
-        this.client.I = 1;
-        equal(this.client.I, this.I);
+        //prevent write
+        _.client.I = 1;
+        equal(_.client.I, _.I);
     });
 
-    test('create verification', function() {
-        var v = this.client.verification('5888575940181172001');
-        equal(this.client.x, '229262074488244325230961648942372972863449427587')
-        equal(v, '19873846808690855440415823956006681328865575524066805930658210668205655064114810146102409275948371383572871316557371293135141340083883181632269635902710237335598474664245685365638909369243424335182087070029493922375132749942851579613716188571563574675617067256236981079393301503441208081882845298352710210181821971964077681174775379330968599394132164824291718278275027310099444341771919047441907907671799625151239084252944862394889084023193159449036119557924403291942211956346695397552569681707666447436329297025916480960935770019549602930657870145470039740881828857336712225479476400016421439531126515780307884405506');
+    test('init with incorect arguments', function() {
+        throws(function() {
+            var client = new ssrp.Client();
+        });
+        throws(function() {
+            var client = new ssrp.Client('login');
+        });
+        throws(function() {
+            var client = new ssrp.Client('login', 'password', 'ng');
+        });
+        throws(function() {
+            var client = new ssrp.Client('login', 'password', 'ng', 'sha');
+        });
+    });
 
+    test('default client arguments', function() {
+        var client = new ssrp.Client('test', 'test');
+        equal(client.$ng, '1024');
+        equal(client.N.toString(16), ssrp.NGS['1024'].N.toLowerCase());
+        equal(client.$hash, 'sha1');
+        equal(client.g.toString(16), ssrp.NGS['1024'].g.toLowerCase());
+        equal(client.k.toString(16), '28d657fb7a40707b0bbed5929c1ca2a7b2531095');
+
+    });
+
+
+    test('generate salt: randomSalt()', function() {
+        var buff = [],
+            salt;
+        for (var i = 0; i < 10; i++) {
+            salt = _.client.randomSalt();
+            equal(buff.indexOf(salt), -1, 'Not unique salt: ' + salt);
+            buff.push(salt);
+        }
+    });
+
+    test('generate random big number: randomNumber()', function() {
+        ok(_.client.randomNumber() instanceof BigInteger, 'Expect BigInteger object');
+        var buff = [],
+            rand;
+        for (var i = 0; i < 10; i++) {
+            rand = _.client.randomNumber().toString();
+            equal(buff.indexOf(rand), -1, 'Not unique random number: ' + rand);
+            buff.push(rand);
+        }
+    });
+
+    test('generate hash()', function() {
+        equal(_.client.hash('test'), 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3', 'Incorect hash for key: test');
+    });
+
+    test('verification()', function() {
+        var res = _.client.verification('5888575940181172001');
+        equal(res.v.toString(), '137160747239038803334312815258876238010504398786561568261851481649526880931927337588322079317786542093933949301115457723596754277770002264679772272158360187049179369280298665116131929490797332205911630099572916583896936799098229503290231486969479270759814347182059166295577462752735531908328364330448773732538')
+        equal(res.salt, '5888575940181172001');
+    });
+
+    test('authentication()', function() {
+        throws(function(){
+            _.client.authentication('5888575940181172001');
+        });
+        var A = _.client.authentication(new BigInteger('11'));
+        equal(A.toString(), '2048');
     });
 
 })();

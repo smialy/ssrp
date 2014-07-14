@@ -188,7 +188,7 @@ class Server():
 if __name__ == '__main__':
     I, p = 'a','a'
 
-    client = Client(I, p)
+    client = Client(I, p, NG_1024)
     pr('client.g', client.g)
     pr('client.N', client.N)
     pr('client.k', client.k)
