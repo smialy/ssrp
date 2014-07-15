@@ -14,8 +14,7 @@ module.exports = function(grunt) {
                 banner:'/*! <%= pkg.name %> - v<%= pkg.version %> - '+'<%= grunt.template.today("yyyy-mm-dd") %> */\n'
             },
             browser: {
-                src:['src/client.js'
-                ],
+                src:['src/*.js'],
                 dest:'dist/<%= pkg.name %>-<%= pkg.version %>.js'
             }
         },
