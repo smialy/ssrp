@@ -104,11 +104,13 @@
     });
 
     test('authentication()', function() {
+        //reguire BigInteger or none
         throws(function(){
             _.client.authentication('5888575940181172001');
         });
         var A = _.client.authentication(new BigInteger('11'));
         equal(A.toString(), '2048');
+        
     });
 
 })();

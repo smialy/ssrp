@@ -19,11 +19,13 @@
 
         if (!username) {
             throw {
+                type:'InvalidArgument',
                 message: 'Username cannot be empty.'
             };
         }
         if (!password) {
             throw {
+                type:'InvalidArgument',
                 message: 'Passwrod cannot be empty.'
             };
         }
@@ -33,11 +35,13 @@
 
         if (!NGS.hasOwnProperty(ngType)) {
             throw {
+                type:'InvalidArgument',
                 message: 'Not found NG type: ' + ngType + ' [' + Object.keys(NGS).join(', ') + ']'
             };
         }
         if (!HASH.hasOwnProperty(hashType)) {
             throw {
+                type:'InvalidArgument',
                 message: 'Not found hash type: ' + hashType
             };
         }
@@ -82,33 +86,12 @@
         });
     };
 
-    ssrp.H = function() {
-        var buff = [];
-    };
-
     ssrp.Client.prototype = {
-        $h:function(){
-            var args = [];
-            for(var i = 0;i<arguments.length;i++){
-                args.push(arguments[i].toString());
-            }
-            return new BigInteger(this.hash(args.join(':')), 16);
-        },
-        hash: function(s) {
-            return HASH[this.$hash](s);
-        },
-        randomSalt: function() {
-            var words = sjcl.random.randomWords(4, 0);
-            return sjcl.codec.hex.fromBits(words);
-        },
-        randomNumber: function() {
-            var words = sjcl.random.randomWords(4, 0);
-            var hex = sjcl.codec.hex.fromBits(words);
-            return new BigInteger(hex, 16);
-        },
+        
         /**
          * Calculate verification code [v = g^x % N]
-         *
+         * 
+         * @param {String} salt (optional)
          * @return {BigInteger}
          */
         verification: function(salt) {
@@ -133,12 +116,12 @@
             }
             if(!(a instanceof BigInteger)){
                 throw {
-                    message:'Expected BigInteger as parameter: a'
+                    type:'InvalidArgument',
+                    message:'Expected BigInteger'
                 };
             }
 
             var A = this.g.modPow(a, this.N);
-            console.log(A.toString())
             if (A.mod(this.N).toString() === '0') {
                 throw {
                     mesage: 'Illegal: A'
@@ -148,6 +131,45 @@
         },
         processChallenge:function(){
 
+        },
+        /**
+         * Hash given arguments
+         * 
+         * @return {BigInteger}
+         */
+        $h:function(){
+            var args = [];
+            for(var i = 0;i<arguments.length;i++){
+                args.push(arguments[i].toString());
+            }
+            return new BigInteger(this.hash(args.join(':')), 16);
+        },
+        /**
+         * Make hash
+         * 
+         * @return {String}
+         */
+        hash: function(s) {
+            return HASH[this.$hash](s);
+        },
+        /**
+         * Generate random string
+         * 
+         * @return {String}
+         */
+        randomSalt: function() {
+            var words = sjcl.random.randomWords(4, 0);
+            return sjcl.codec.hex.fromBits(words);
+        },
+        /**
+         * Generate random big number
+         * 
+         * @return {BigInteger}
+         */
+        randomNumber: function() {
+            var words = sjcl.random.randomWords(4, 0);
+            var hex = sjcl.codec.hex.fromBits(words);
+            return new BigInteger(hex, 16);
         },
         /**
          * Calculate X [x = hash(s | hash(I | ":" | P))]
