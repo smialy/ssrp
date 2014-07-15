@@ -19,13 +19,13 @@
 
         if (!username) {
             throw {
-                type:'InvalidArgument',
+                type: 'InvalidArgument',
                 message: 'Username cannot be empty.'
             };
         }
         if (!password) {
             throw {
-                type:'InvalidArgument',
+                type: 'InvalidArgument',
                 message: 'Passwrod cannot be empty.'
             };
         }
@@ -35,13 +35,13 @@
 
         if (!NGS.hasOwnProperty(ngType)) {
             throw {
-                type:'InvalidArgument',
+                type: 'InvalidArgument',
                 message: 'Not found NG type: ' + ngType + ' [' + Object.keys(NGS).join(', ') + ']'
             };
         }
         if (!HASH.hasOwnProperty(hashType)) {
             throw {
-                type:'InvalidArgument',
+                type: 'InvalidArgument',
                 message: 'Not found hash type: ' + hashType
             };
         }
@@ -60,7 +60,7 @@
         var NG = NGS[ngType];
         var N = new BigInteger(NG.N, 16);
         var g = new BigInteger(NG.g, 16);
-        k = this.$h(N, g);
+        var k = this.$h(N, g);
 
         Object.defineProperties(this, {
             I: {
@@ -87,10 +87,10 @@
     };
 
     ssrp.Client.prototype = {
-        
+
         /**
          * Calculate verification code [v = g^x % N]
-         * 
+         *
          * @param {String} salt (optional)
          * @return {BigInteger}
          */
@@ -106,7 +106,7 @@
             };
         },
         /**
-         * 
+         *
          * @param {BigInteger} a
          * @return {BigInteger}
          */
@@ -114,39 +114,76 @@
             if (!a) {
                 a = this.randomNumber();
             }
-            if(!(a instanceof BigInteger)){
+            if (!(a instanceof BigInteger)) {
                 throw {
-                    type:'InvalidArgument',
-                    message:'Expected BigInteger'
+                    type: 'InvalidArgument',
+                    message: 'Expected BigInteger'
                 };
             }
 
             var A = this.g.modPow(a, this.N);
             if (A.mod(this.N).toString() === '0') {
                 throw {
+                    type: 'UnexpectedValue',
                     mesage: 'Illegal: A'
                 };
             }
-            return A;
+            return {
+                A: A,
+                a: a
+            };
         },
-        processChallenge:function(){
+        processChallenge: function(salt, a, A, B) {
+            if (!salt) {
+                throw {
+                    type: 'InvalidArgument',
+                    message: 'Missing argument: "salt"'
+                };
+            }
+            if (!a) {
+                throw {
+                    type: 'InvalidArgument',
+                    message: 'Missing argument: "a"'
+                };
+            }
+            if (!(A instanceof BigInteger && B instanceof BigInteger) || A.mod(this.N).toString() === '0' || B.mod(this.N).toString() === '0') {
+                throw {
+                    type: 'InvalidArgument',
+                    message: 'Require A and B as BigInteger and different from zero'
+                };
+            }
 
+            var u = this.$h(A, B);
+            var x = this._calculateX(salt);
+
+            //bx = g^x % N
+            var bx = this.g.modPow(x, this.N);
+
+            //(B - kg^x) ^ (a + ux)
+            var S = B.subtract((this.k.multiply(bx))).modPow(a.add(u.multiply(x)), this.N);
+            var K = new BigInteger(this.hash(S.toString()), 16);
+            var M = this.$h(A, B, K);
+            return {
+                M: M,
+                K: K,
+                S: S
+            };
         },
         /**
          * Hash given arguments
-         * 
+         *
          * @return {BigInteger}
          */
-        $h:function(){
+        $h: function() {
             var args = [];
-            for(var i = 0;i<arguments.length;i++){
+            for (var i = 0; i < arguments.length; i++) {
                 args.push(arguments[i].toString());
             }
             return new BigInteger(this.hash(args.join(':')), 16);
         },
         /**
          * Make hash
-         * 
+         *
          * @return {String}
          */
         hash: function(s) {
@@ -154,7 +191,7 @@
         },
         /**
          * Generate random string
-         * 
+         *
          * @return {String}
          */
         randomSalt: function() {
@@ -163,7 +200,7 @@
         },
         /**
          * Generate random big number
-         * 
+         *
          * @return {BigInteger}
          */
         randomNumber: function() {
