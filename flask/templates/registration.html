@@ -2,47 +2,30 @@
 <html>
     <head>
         <title>SRP</title>
-        <script type="text/javascript" src="static/js/jsbn.js"></script>
-        <script type="text/javascript" src="static/js/sha1.js"></script>
-        <script type="text/javascript" src="static/js/sjcl.js"></script>
-        <script type="text/javascript" src="static/js/srp-client.js"></script>
+        
     </head>
     <body>
+        <div>
+            <div id="register-box">
+            <div class="form-line">
+                <input type="text" name="login" placeholder="Login:" />
+            </div>
+            <div class="form-line">
+                <input type="password" name="password" placeholder="Password:" />
+            </div>
+            <div class="form-line">
+                <input type="password" name="password_repeat" placeholder="Repeat password:" />
+            </div>
+            <div class="form-line">
+                <button>Register</button>
+            </div>
+            <a class="login" href="/login">Login</a>
+        </div>
+        </div>
 
-
-
-        <script type="text/javascript">
-        var send = function(type, url, data, callback){
-            type = type.toLowerCase()
-            var query = [];
-            for(var i in data){
-                query.push(encodeURIComponent(i)+'='+encodeURIComponent(data[i]));
-            }
-            query = query.join('&');
-            var xhr = new XMLHttpRequest();
-            xhr.onload = function(){
-                if(xhr.getResponseHeader('Content-Type').indexOf('application/json') === 0){
-                    callback(JSON.parse(xhr.responseText));
-                }else{
-                    callback(xhr.responseText);
-                }
-                
-            };
-
-            xhr.open(type, url, true);
-            if(type === 'post'){
-                xhr.setRequestHeader("Content-Type", 'application\/x-www-form-urlencoded');
-            }
-            xhr.send(query);
-        };
-        var $ = function(s){
-            return document.querySelector(s);
-        };
-        var $$ = function(s){
-            return document.querySelectorAll(s);
-        };
-
-  </script>
+        <script type="text/javascript" src="static/js/srp.js"></script>
+        <script type="text/javascript" src="static/js/main.js"></script>
+        <script type="text/javascript" src="static/js/registration.js"></script>
     </body>
 </html>
 
