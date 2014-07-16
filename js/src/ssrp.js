@@ -325,5 +325,9 @@
     };
     ssrp.HASH = HASH;
     ssrp.NGS = NGS;
+    ssrp.NG_1024 = 1024;
+    ssrp.NG_2048 = 2048;
+    ssrp.NG_4096 = 4096;
+    ssrp.NG_8192 = 8192;
 
 })(window.ssrp = {});

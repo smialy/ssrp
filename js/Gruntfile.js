@@ -14,7 +14,7 @@ module.exports = function(grunt) {
                 banner:'/*! <%= pkg.name %> - v<%= pkg.version %> - '+'<%= grunt.template.today("yyyy-mm-dd") %> */\n'
             },
             browser: {
-                src:['src/*.js'],
+                src:['vendor/*.js','src/*.js'],
                 dest:'dist/<%= pkg.name %>-<%= pkg.version %>.js'
             }
         },
@@ -67,6 +67,6 @@ module.exports = function(grunt) {
     
     //grunt.registerTask('default',['concat','jshint','uglify']);
 
-    grunt.registerTask('default', ['jsbeautifier', 'concat','jshint']);
+    grunt.registerTask('default', ['jsbeautifier', 'concat','jshint', 'uglify']);
 };
 
