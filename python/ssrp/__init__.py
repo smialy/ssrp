@@ -1,8 +1,7 @@
 import hashlib
 import random
 
-import nums
-
+from . import nums
 
 NG_1024 = 0
 NG_2048 = 1
@@ -27,7 +26,18 @@ def cryptrand(N, n=1024):
     return random.SystemRandom().getrandbits(n) % N
 
 
+'''
+Client implementation
+'''
 class Client():
+    '''
+    Constructor
+
+    :param login str
+    :param password str
+    :param ng_type int
+    :param hash_type callback Hash method
+    '''
     def __init__(self, login, password, ng_type=NG_2048, hash_type=SHA1):
         
         self._H = HH(hash_type)
@@ -37,6 +47,12 @@ class Client():
         self.k = self._H(self.N, self.g)
     
     def verifier(self, salt=None):
+        '''
+        Generate salt and verifier key
+
+        :param salt (default:None)
+        :return (salt:str, V:int)
+        '''
         if salt is None:
             salt = cryptrand(self.N, 64)
         x = self._H(salt, self.I, self.p)
@@ -44,11 +60,23 @@ class Client():
         return salt, v
     
     def authentication(self):
+        '''
+        Generate key A
+
+        :return A:int
+        '''
         self.a = cryptrand(self.N)
         self.A = pow(self.g, self.a, self.N)
         return self.A
 
     def process_challenge(self, salt, B):
+        '''
+        Proccess chellenge
+
+        :param salt:str
+        :param B:int
+        :return int
+        '''
         u = self._H(self.A, B)
         x = self._H(salt, self.I, self.p)
 
@@ -57,7 +85,18 @@ class Client():
         
         return self._H(self.A, B, self.K)
 
+'''
+Server
+'''
 class Server():
+    '''
+    :param I str Login
+    :param salt str
+    :param v int
+    :param A int
+    :param ng_type int
+    :param hash_type callback Hash method
+    '''
     def __init__(self, I, salt, v, A, ng_type=NG_2048, hash_type=SHA1):
 
         self._H = HH(hash_type)
@@ -81,9 +120,17 @@ class Server():
         self.M = self._H(A, self.B, self.K)
 
     def challenge(self):
+        '''
+        Return challenge 
+
+        :return (salt:str, B:int)
+        '''
         return self.salt, self.B
 
     def verify_session(self, M):
+        '''
+        :param M int
+        '''
         if M == self.M:
             return self._H(self.A, M, self.K)
         return None
