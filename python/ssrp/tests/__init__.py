@@ -12,7 +12,6 @@ class TestCase(unittest.TestCase):
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
-        self.ensure_clean_request_context()
         self.teardown()
 
     def assert_equal(self, x, y):

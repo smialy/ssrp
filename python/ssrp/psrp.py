@@ -1,3 +1,143 @@
+import hashlib
+import random
+
+NG_1024 = 0
+NG_2048 = 1
+NG_4096 = 2
+NG_8192 = 3
+
+SHA1 = hashlib.sha1
+SHA512 = hashlib.sha512
+
+def pr(name, value):
+    print(name, str(value)[:50])
+
+class Hash():
+    def __init__(self, hash_type):
+        self._hash_type = hash_type
+
+    def HI(self, *a):
+        return int(self.H(*a), 16)
+
+    def H(self, *a):
+        a = ':'.join([str(a) for a in a])
+        return self._hash_type(a.encode('ascii')).hexdigest()
+
+    def crypt_rand(self, N, n=1024):
+        return random.SystemRandom().getrandbits(n) % N
+
+'''
+Client implementation
+'''
+class Client(Hash):
+    '''
+    Constructor
+
+    :param login str
+    :param password str
+    :param ng_type int
+    :param hash_type callback Hash method
+    '''
+    def __init__(self, login, password, ng_type=NG_2048, hash_type=SHA1):
+        super().__init__(hash_type)
+        self.I = login
+        self.p = password
+        self.N, self.g = get_ng(ng_type)
+        self.k = self.HI(self.N, self.g)
+    
+    def verifier(self, salt=None):
+        '''
+        Generate salt and verifier key
+
+        :param salt (default:None)
+        :return (salt:str, V:int)
+        '''
+        if salt is None:
+            salt = self.crypt_rand(self.N, 64)
+        x = self.HI(salt, self.H(self.I, self.p))
+        v = pow(self.g, x, self.N)
+        return salt, v
+    
+    def authentication(self, a=None):
+
+        '''
+        Generate key A
+
+        :return A:int
+        '''
+        if a is None:
+            self.a = self.crypt_rand(self.N)
+        else:
+            self.a = a
+        self.A = pow(self.g, self.a, self.N)
+        return self.A
+
+    def process_challenge(self, salt, B):
+        '''
+        Proccess chellenge
+
+        :param salt:str
+        :param B:int
+        :return int
+        '''
+        u = self.HI(self.A, B)
+        x = self.HI(salt, self.H(self.I, self.p))
+
+        S = pow(B - self.k * pow(self.g, x, self.N), self.a + u * x, self.N)
+        self.K = self.HI(S)
+        
+        return self.HI(self.A, B, self.K)
+
+    
+
+'''
+Server
+'''
+class Server(Hash):
+    '''
+    :param I str Login
+    :param salt str
+    :param v int
+    :param A int
+    :param ng_type int
+    :param hash_type callback Hash method
+    '''
+    def __init__(self, I, salt, v, A, ng_type=NG_2048, hash_type=SHA1):
+        super().__init__(hash_type)
+
+        self.I = I
+        self.salt = salt
+
+        N, g = get_ng(ng_type)
+        self.k = self.HI(N, g)
+
+        self.v = v
+        self.A = A
+
+        b = self.crypt_rand(N)
+        self.B = (self.k * v + pow(g, b, N)) % N
+
+        u = self.HI(A, self.B)
+
+        S = pow(A * pow(v, u, N), b, N)
+        self.K = self.HI(S)
+        self.M = self.HI(A, self.B, self.K)
+
+    def challenge(self):
+        '''
+        Return challenge 
+
+        :return (salt:str, B:int)
+        '''
+        return self.salt, self.B
+
+    def verify_session(self, M):
+        '''
+        :param M int
+        '''
+        if M == self.M:
+            return self.HI(self.A, M, self.K)
+        return None
 
 def get_ng(ng_type):
     '''
@@ -90,3 +230,38 @@ FC026E479558E4475677E9AA9E3050E2765694DFC81F56E880B96E71\
 60C980DD98EDD3DFFFFFFFFFFFFFFFFF''',
 '0x13')
 )
+
+if __name__ == '__main__':
+    I, p = 'a','a'
+
+    client = Client(I, p)
+    pr('client.g', client.g)
+    pr('client.N', client.N)
+    pr('client.k', client.k)
+    salt, v = client.verifier()
+    pr('client.salt',salt)
+    pr('client.v', v)
+
+    A = client.authentication()
+
+    pr('client.A',A)
+    server = Server(I, salt, v, A)
+    _salt, B = server.challenge()
+
+    assert _salt == salt
+
+    pr('server.K', server.K)
+    pr('server.B', B)
+
+    M = client.process_challenge(salt, B)
+    pr('client.K', client.K)
+
+    pr('verify_session', server.verify_session(M))
+
+
+
+
+
+
+
+

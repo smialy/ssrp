@@ -1,13 +1,13 @@
 from setuptools import setup
 
 setup(
-    name='SSRP3',
+    name='SSRP',
     version='1.0',
     url='http://github.com/smialy/ssrp3',
     license='MIT',
     author='Piotr Smialkowski',
     descriptiom='Secure Remote Password protocol (SRP)',
-    packages='ssrp3',
+    packages='ssrp',
     platforms='any',
     classifiers=[
         'License :: OSI Approved :: MIT License',
