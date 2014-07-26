@@ -23,6 +23,23 @@ class ClientTestCase(TestCase):
         self.assert_equal(M, 400895181215323495337218377563432365163800385307)
 
 
+    def test_complex(self):
+        I, p = 'a','a'
+
+        client = ssrp.Client(I, p)
+        salt, v = client.verifier()
+        A = client.authentication()
+
+    
+        server = ssrp.Server(I, salt, v, A)
+        _salt, B = server.challenge()
+
+        self.assert_equal(_salt, salt)
+
+        M = client.process_challenge(salt, B)
+        self.assert_true(server.verify_session(M) is not None)
+
+
 class ServerTestcase(TestCase):
     def setup(self):
         pass

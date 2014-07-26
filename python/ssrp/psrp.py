@@ -230,38 +230,3 @@ FC026E479558E4475677E9AA9E3050E2765694DFC81F56E880B96E71\
 60C980DD98EDD3DFFFFFFFFFFFFFFFFF''',
 '0x13')
 )
-
-if __name__ == '__main__':
-    I, p = 'a','a'
-
-    client = Client(I, p)
-    pr('client.g', client.g)
-    pr('client.N', client.N)
-    pr('client.k', client.k)
-    salt, v = client.verifier()
-    pr('client.salt',salt)
-    pr('client.v', v)
-
-    A = client.authentication()
-
-    pr('client.A',A)
-    server = Server(I, salt, v, A)
-    _salt, B = server.challenge()
-
-    assert _salt == salt
-
-    pr('server.K', server.K)
-    pr('server.B', B)
-
-    M = client.process_challenge(salt, B)
-    pr('client.K', client.K)
-
-    pr('verify_session', server.verify_session(M))
-
-
-
-
-
-
-
-
