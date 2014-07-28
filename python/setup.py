@@ -6,8 +6,8 @@ setup(
     url='http://github.com/smialy/ssrp3',
     license='MIT',
     author='Piotr Smialkowski',
-    descriptiom='Secure Remote Password protocol (SRP)',
-    packages='ssrp',
+    description='Secure Remote Password protocol (SRP)',
+    packages=['ssrp'],
     platforms='any',
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -17,5 +17,5 @@ setup(
         'Topic :: Security',
         'Topic :: Security :: Cryptography',
     ],
-    test_suite='ssr3.tests.suite'
+    test_suite='ssrp.tests.ssrp'
 )
