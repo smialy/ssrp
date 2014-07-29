@@ -3,7 +3,6 @@ language: python
 python:
     - "3.3"
     - "3.4"
-    - "pypy3"
 
 script: cd ./python && python setup.py test
 
