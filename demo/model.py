@@ -12,19 +12,19 @@ class User():
         self._srp = srp
 
     def get_id(self):
-        print('User.get_id()', self._login)
+        print('User.get_id() -> "{0}"'.format(self._login))
         return self._login;
 
     def is_anonymous(self):
-        print('User.is_anonymous()')
+        print('User.is_anonymous() -> "{0}"'.format(self._authenticated))
         return not self._authenticated
 
     def is_active(self):
-        print('User.is_active()')
+        print('User.is_active()- "True"')
         return True
 
     def is_authenticated(self):
-        print('User.is_authenticated()',self.authenticated)
+        print('User.is_authenticated() -> "{0}"'.format(self.authenticated))
         return self.authenticated
     
     @property
@@ -45,7 +45,7 @@ class User():
 
     @authenticated.setter
     def authenticated(self, value):
-        print('User.authenticated.setter',value)
+        print('User.authenticated.setter({0})'.format(bool(value)))
         self._authenticated = bool(value)
 
 def find_user(_id):
