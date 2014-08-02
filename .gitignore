@@ -1,5 +1,8 @@
 __pycache__/
 *.py[cod]
+build
+*.egg-info
+.tox
 
 node_modules
 
